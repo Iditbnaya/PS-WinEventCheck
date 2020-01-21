@@ -1,0 +1,41 @@
+$SrvPassword = ConvertTo-SecureString "$($ENV:SrvPassword)" -AsPlainText -Force
+$Credential = New-Object System.Management.Automation.PSCredential ("$ENV:SrvUser", $SrvPassword)
+
+Invoke-Command -ComputerName "servername.domain.local" -Credential $Credential -ScriptBlock{
+
+function sendMail($Subject, $Body, $To, $From )
+ {
+$emailAddress  = "Email@domain.com"
+$fromaddress = "DonotReplay@domain.com" 
+$toaddress = $emailAddress 
+$Subject = "Log Error" 
+$Body = "No Event During the last 15 minutes"
+     #SMTP server name
+     $smtpServer = "smtp.domain.com" 
+     #Creating a Mail object
+     $msg = new-object Net.Mail.MailMessage
+     #Creating SMTP server object
+     $smtp = new-object Net.Mail.SmtpClient($smtpServer)
+
+     #Email structure
+     $msg.From = $fromaddress
+     $msg.ReplyTo = "DoNotreplyfalcon@hmc.co.il"
+     $msg.To.Add($toaddress)
+     $msg.subject = $Subject
+     $msg.body = $Body
+
+     #Sending email
+     $smtp.Send($msg)
+ 
+}
+$time = get-date
+$timefive = $time.AddMinutes(-15)
+$event = Get-WinEvent -ComputerName "servername.domain.local" -FilterHashtable @{Logname='Application';ID=103} -MaxEvents 1 
+	if ($event.TimeCreated -lt $timefive){
+      
+    	sendMail -Subject $Subject -Body $Body
+    
+  
+    
+ 	 }
+}
